@@ -5,4 +5,4 @@
 Abem is a small utility library written is Swift that aims to expose the functionality provided by  
 [libsodium](https://github.com/jedisct1/libsodium) but directly using "human generated"
 passwords or passphrases. It uses the excellent [swift-sodium](https://github.com/jedisct1/swift-sodium)
-interface to use li sodium.
+interface exposing lib sodium.
