@@ -116,13 +116,15 @@ public struct Abem {
     public static func Decrypt(_ ciphertext: Ciphertext, with pwd: String) throws -> CiphertextPayload {
         guard #available(OSX 10.15, *) else {throw AbemError.operationNotSupported}
         guard #available(iOS 13.0, *) else {throw AbemError.operationNotSupported}
+        
+        guard pwd.count > 0 else {throw }
         let sodium = Sodium()
         // Derive the encryption key from the password.
         let pwdBytes = pwd.bytes
         let salt = ciphertext.salt
         let keySize = sodium.secretBox.KeyBytes
         let key = sodium.pwHash.hash(outputLength: keySize, passwd: pwdBytes, salt: [UInt8](salt), opsLimit: sodium.pwHash.OpsLimitModerate, memLimit: sodium.pwHash.MemLimitModerate)!
-        // Dencrypt using the derived key.
+        // Decrypt using the derived key.
         let contentBytes  = sodium.secretBox.open(nonceAndAuthenticatedCipherText: [UInt8](ciphertext.ciphertext), secretKey: key)
         let payload = CiphertextPayload(From: Data(contentBytes!))
         guard payload != nil else {throw AbemError.internalError}
@@ -131,7 +133,7 @@ public struct Abem {
 }
 
 public enum AbemError: Error {
-    case readingFile(file: String)
+    case emptyPassword
     case metadataTooLong
     case internalError
     case operationNotSupported
