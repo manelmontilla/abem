@@ -95,6 +95,7 @@ public struct Abem {
         
         guard #available(OSX 10.15, *) else {throw AbemError.operationNotSupported}
         guard #available(iOS 13.0, *) else {throw AbemError.operationNotSupported}
+        guard pwd.count > 0 else {throw AbemError.emptyPassword}
         guard PasswordStrength.Check(pwd) == pStrength else {throw AbemError.passwordTooWeek}
         let pwdBytes = pwd.bytes
         let sodium = Sodium()
@@ -117,7 +118,7 @@ public struct Abem {
         guard #available(OSX 10.15, *) else {throw AbemError.operationNotSupported}
         guard #available(iOS 13.0, *) else {throw AbemError.operationNotSupported}
         
-        guard pwd.count > 0 else {throw }
+        guard pwd.count > 0 else {throw AbemError.emptyPassword}
         let sodium = Sodium()
         // Derive the encryption key from the password.
         let pwdBytes = pwd.bytes
