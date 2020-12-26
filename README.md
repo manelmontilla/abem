@@ -1,4 +1,4 @@
-# abem
+# Abem
 ![Swift](https://github.com/manelmontilla/abem/workflows/Swift/badge.svg)
 ## This library is still in alpha status and not suitable to be used in production.
 ## I'm still learning Swift so probably te code is not very idiomatic.
