@@ -6,25 +6,25 @@ import Foundation
 final class abemTests: XCTestCase {
     func testEncrypt() throws {
         let data = "Hello world".data(using: .utf8)!
-        let cyphertext = try Abem.Encrypt(data: data, metadata:"", with: "aB<z0aT!_Q")
-        let payload = try Abem.Decrypt(cyphertext!, with: "aB<z0aT!_Q")
+        let ciphertext = try Abem.Encrypt(data: data, metadata:"", with: "aB<z0aT!_Q")
+        let payload = try Abem.Decrypt(ciphertext!, with: "aB<z0aT!_Q")
         XCTAssertEqual(String(data: payload.payload, encoding: .utf8), "Hello world")
     }
     
     func testEncryptWithMetadata() throws {
         let data = "Hello world".data(using: .utf8)!
         let metadata = "metadata"
-        let cyphertext = try Abem.Encrypt(data: data, metadata:metadata, with: "aB<z0aT!_Q")
-        let payload = try Abem.Decrypt(cyphertext!, with: "aB<z0aT!_Q")
+        let ciphertext = try Abem.Encrypt(data: data, metadata:metadata, with: "aB<z0aT!_Q")
+        let payload = try Abem.Decrypt(ciphertext!, with: "aB<z0aT!_Q")
         XCTAssertEqual(String(data: payload.payload, encoding: .utf8), "Hello world")
         XCTAssertEqual(payload.metadata, metadata)
     }
     
     func testPassowrdStrength() {
-        XCTAssertEqual(PasswordStrength.Check("abcdef"),.weak)
-        XCTAssertEqual(PasswordStrength.Check("aB<z0aT!"),.strong)
-        XCTAssertEqual(PasswordStrength.Check("@"),.weak)
-        XCTAssertEqual(PasswordStrength.Check("aB<z0aT!_Q"),.strong)
+        XCTAssertEqual(Abem.PasswordStrength.Check("abcdef"),.weak)
+        XCTAssertEqual(Abem.PasswordStrength.Check("aB<z0aT!"),.strong)
+        XCTAssertEqual(Abem.PasswordStrength.Check("@"),.weak)
+        XCTAssertEqual(Abem.PasswordStrength.Check("aB<z0aT!_Q"),.strong)
     }
     
     func testCiphertextCombined() {
