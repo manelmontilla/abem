@@ -82,7 +82,8 @@ public struct Abem {
      
      - Parameter data: The  data to encrypt.
      
-     - Parameter metadata: The metadata to encrypt together with the provided data.
+     - Parameter metadata: The metadata to encrypt together with the provided data, the size of the metadata must be
+     up to 256 bytes, if it exceed that size it will be truncated.
      
      - Parameter pwd: The password to encrypt the data and metadata with.
      
@@ -117,7 +118,6 @@ public struct Abem {
     public static func Decrypt(_ ciphertext: Ciphertext, with pwd: String) throws -> CiphertextPayload {
         guard #available(OSX 10.15, *) else {throw AbemError.operationNotSupported}
         guard #available(iOS 13.0, *) else {throw AbemError.operationNotSupported}
-        
         guard pwd.count > 0 else {throw AbemError.emptyPassword}
         let sodium = Sodium()
         // Derive the encryption key from the password.
@@ -127,7 +127,8 @@ public struct Abem {
         let key = sodium.pwHash.hash(outputLength: keySize, passwd: pwdBytes, salt: [UInt8](salt), opsLimit: sodium.pwHash.OpsLimitModerate, memLimit: sodium.pwHash.MemLimitModerate)!
         // Decrypt using the derived key.
         let contentBytes  = sodium.secretBox.open(nonceAndAuthenticatedCipherText: [UInt8](ciphertext.ciphertext), secretKey: key)
-        let payload = CiphertextPayload(From: Data(contentBytes!))
+        guard let content = contentBytes else {throw AbemError.decryptError}
+        let payload = CiphertextPayload(From: Data(content))
         guard payload != nil else {throw AbemError.internalError}
         return payload!
     }
@@ -189,10 +190,10 @@ public struct Abem {
     
     public enum AbemError: Error {
         case emptyPassword
-        case metadataTooLong
         case internalError
         case operationNotSupported
         case passwordTooWeek
+        case decryptError
     }
     
     
