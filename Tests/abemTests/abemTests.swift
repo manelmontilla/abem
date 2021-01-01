@@ -42,10 +42,24 @@ final class abemTests: XCTestCase {
         
     }
     
+    func testPasswordEntropy() {
+        var entropy = Abem.PasswordStrength.Entropy(for: "example")
+        XCTAssertEqual(entropy.truncate(),32.90)
+        entropy = Abem.PasswordStrength.Entropy(for: "entraña")
+        XCTAssertEqual(entropy.truncate(),52.88)
+    }
+    
     static var allTests = [
         ("testEncrypt", testEncrypt),
         ("testPassowrdStrength", testPassowrdStrength),
-        ("testCiphertextCombined",testCiphertextCombined)
+        ("testCiphertextCombined",testCiphertextCombined),
+        ("testPasswordEntropy",testPasswordEntropy)
         
     ]
+}
+
+extension Double {
+    func truncate() -> Double{
+        ((self*100).rounded())/100
+    }
 }
