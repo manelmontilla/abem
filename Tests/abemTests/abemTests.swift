@@ -13,11 +13,44 @@ final class abemTests: XCTestCase {
     
     func testEncryptWithMetadata() throws {
         let data = "Hello world".data(using: .utf8)!
-        let metadata = "metadata"
-        let ciphertext = try Abem.Encrypt(data: data, metadata:metadata, with: "aB<z0aT!_Q")
-        let payload = try Abem.Decrypt(ciphertext!, with: "aB<z0aT!_Q")
+        var metadata = "metadata"
+        var ciphertext = try Abem.Encrypt(data: data, metadata:metadata, with: "aB<z0aT!_Q")
+        var payload = try Abem.Decrypt(ciphertext!, with: "aB<z0aT!_Q")
         XCTAssertEqual(String(data: payload.payload, encoding: .utf8), "Hello world")
         XCTAssertEqual(payload.metadata, metadata)
+        
+        metadata = ""
+        ciphertext = try Abem.Encrypt(data: data, metadata:metadata, with: "aB<z0aT!_Q")
+        payload = try Abem.Decrypt(ciphertext!, with: "aB<z0aT!_Q")
+        XCTAssertEqual(String(data: payload.payload, encoding: .utf8), "Hello world")
+        XCTAssertEqual(payload.metadata, metadata)
+        
+        
+        // Test it encrypts properly metadata with 255 chars.
+        metadata = String((0..<255).flatMap{
+            _ in
+            return "a"
+        })
+        
+        ciphertext = try Abem.Encrypt(data: data, metadata:metadata, with: "aB<z0aT!_Q")
+        payload = try Abem.Decrypt(ciphertext!, with: "aB<z0aT!_Q")
+        XCTAssertEqual(String(data: payload.payload, encoding: .utf8), "Hello world")
+        XCTAssertEqual(payload.metadata, metadata)
+        
+        
+        // Test it trims the metadata to 255 chars if it is longer than 255 chars.
+        metadata = String((0..<255).flatMap{
+            _ in
+            return "a"
+        })
+        
+        
+        ciphertext = try Abem.Encrypt(data: data, metadata:metadata+"b", with: "aB<z0aT!_Q")
+        payload = try Abem.Decrypt(ciphertext!, with: "aB<z0aT!_Q")
+        XCTAssertEqual(String(data: payload.payload, encoding: .utf8), "Hello world")
+        XCTAssertEqual(payload.metadata, metadata)
+        
+        
     }
     
     func testPassowrdStrength() {

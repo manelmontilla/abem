@@ -29,28 +29,17 @@ public struct Abem {
             } else {
                 self.metadata = ""
             }
-            // Read the payload.
-            if data.count <= size+1 {
-                self.payload = Data()
-                return
-            }
             let payload = data[Int(size)+1..<data.count]
             self.payload = payload
         }
         
         public func Combined() -> Data {
             // = sizeOf(metadata)||trim(metadata,256)||ciphertext
-            let meta = self.metadata.prefix(256)
+            let meta = self.metadata.prefix(255)
             var combined = Data()
             let size = UInt8(meta.count)
             combined.append(size)
-            var metaD = meta.data(using: .utf8)!
-            // Depending on the metadata its encoding in utf8 can have more
-            // than 256 bytes if any of the chars need more than 1 byte to be
-            // encoded.
-            if metaD.count > 256 {
-                metaD.removeLast(metaD.count-256)
-            }
+            let metaD = meta.data(using: .utf8)!.prefix(255)
             combined.append(metaD)
             combined.append(self.payload)
             return combined
