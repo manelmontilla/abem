@@ -2,12 +2,21 @@
   "object": {
     "pins": [
       {
-        "package": "Sodium",
-        "repositoryURL": "git@github.com:jedisct1/swift-sodium.git",
+        "package": "Clibsodium",
+        "repositoryURL": "git@github.com:manelmontilla/clibsodium-xcframework",
         "state": {
           "branch": null,
-          "revision": "4f9164a0a2c9a6a7ff53a2833d54a5c79c957342",
-          "version": "0.9.1"
+          "revision": "7d07eaac8f6fc7ad3248b1a8c601e0c098c552dc",
+          "version": "0.9.2"
+        }
+      },
+      {
+        "package": "Sodium",
+        "repositoryURL": "git@github.com:manelmontilla/swift-sodium.git",
+        "state": {
+          "branch": null,
+          "revision": "532831abaa17595bd6a219eeee98a7794ea316b7",
+          "version": "0.9.3"
         }
       }
     ]
