@@ -2,16 +2,12 @@ syntax = "proto3";
 
 package sealed_files_box;
 
-message BoxData {
+message FilesData {
   string name = 1;
-  uint64 files_data_size = 2;
   uint64 files_content_area_offset = 3;
   uint64 files_content_area_size = 4;
-}
-
-message FilesData {
-  repeated FileListItem file_list = 1;
-  DirectoryData root_dir = 2;
+  repeated FileListItem file_list = 5;
+  DirectoryData root_dir = 6;
 }
 
 message FileListItem {
