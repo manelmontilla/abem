@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+message SealedFilesBoxData {
+  string name = 1;
+  uint64 files_data_size = 2;
+  uint64 files_offset = 3;
+}
+
+message SealedFilesBoxFilesData {
+  repeated SealedFilesBoxFileListItem file_list = 1;
+  SealedFilesBoxDirectoryData root_dir = 2;
+}
+
+message SealedFilesBoxFileListItem {
+  string name = 1;
+  string type = 2;
+  uint64 offset = 3;
+  uint64 size = 4;
+  bool deleted = 5;
+  bytes hash = 6;
+}
+
+message SealedFilesBoxDirectoryData {
+    string name = 1;
+    repeated bytes file_hashes = 2;
+    repeated SealedFilesBoxDirectoryData subdirectories = 3;
+}

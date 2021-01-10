@@ -11,6 +11,15 @@
         }
       },
       {
+        "package": "SwiftProtobuf",
+        "repositoryURL": "git@github.com:apple/swift-protobuf.git",
+        "state": {
+          "branch": null,
+          "revision": "da9a52be9cd36c63993291ce3f1b65dafcd1e826",
+          "version": "1.14.0"
+        }
+      },
+      {
         "package": "Sodium",
         "repositoryURL": "git@github.com:manelmontilla/swift-sodium.git",
         "state": {

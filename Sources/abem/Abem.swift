@@ -113,14 +113,16 @@ public struct Abem {
         let pwdBytes = pwd.bytes
         let salt = ciphertext.salt
         let keySize = sodium.secretBox.KeyBytes
-        let key = sodium.pwHash.hash(outputLength: keySize, passwd: pwdBytes, salt: [UInt8](salt), opsLimit: sodium.pwHash.OpsLimitModerate, memLimit: sodium.pwHash.MemLimitModerate)!
+        var key = sodium.pwHash.hash(outputLength: keySize, passwd: pwdBytes, salt: [UInt8](salt), opsLimit: sodium.pwHash.OpsLimitModerate, memLimit: sodium.pwHash.MemLimitModerate)!
         // Decrypt using the derived key.
         let contentBytes  = sodium.secretBox.open(nonceAndAuthenticatedCipherText: [UInt8](ciphertext.ciphertext), secretKey: key)
+        sodium.utils.zero(&key)
         guard let content = contentBytes else {throw AbemError.decryptError}
         let payload = CiphertextPayload(From: Data(content))
         guard payload != nil else {throw AbemError.internalError}
         return payload!
     }
+    
     
     public enum AbemError: Error {
         case emptyPassword

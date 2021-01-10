@@ -1,0 +1,79 @@
+//
+//  File.swift
+//  
+//
+//  Created by Manel Montilla on 9/1/21.
+//
+
+import Foundation
+import Sodium
+extension Abem {
+    
+    struct SealedFilesBox {
+        public let file: URL
+        public let box: SealedFilesBoxData
+        var fileHandle: FileHandle
+        
+        
+        init?(from file:URL, with password: String) throws {
+            
+            guard file.startAccessingSecurityScopedResource() else {throw
+                Abem.SealedFilesBoxError.LogicalError("can not access file: \(file.absoluteString)")
+            }
+            defer {file.stopAccessingSecurityScopedResource()}
+            
+            self.file = file
+            
+            // Open the handler for reading.
+            self.fileHandle = try FileHandle(forReadingFrom: file)
+            
+            // Read the header.
+            let header = try SealedFilesBoxHeader(from: self.fileHandle)
+             
+            // Derive the master key.
+            
+        }
+        
+        
+    }
+    
+    
+    public enum SealedFilesBoxError: Error {
+        case LogicalError(_ Description: String)
+    }
+    
+    struct SealedFilesBoxHeader {
+        let sealedBoxDataSize: Int64
+        init?(from file: FileHandle) throws {
+            guard #available(OSX 10.15.4, *) else {throw AbemError.operationNotSupported}
+            guard #available(iOS 13.0, *) else {throw AbemError.operationNotSupported}
+            // Read the size of the sealed box data.
+            let lenData = try file.read(upToCount: 8)!
+            if lenData.count != 4 {
+                throw Abem.SealedFilesBoxError.LogicalError("invalid sealed file")
+            }
+            
+            self.sealedBoxDataSize = lenData.withUnsafeBytes{
+                $0.load(as: Int64.self)
+            }
+        }
+        
+    }
+    
+}
+
+extension SealedFilesBoxData {
+    
+    init?(from: FileHandle, key: Data, size: Int64) throws {
+        guard #available(OSX 10.15.4, *) else {throw Abem.AbemError.operationNotSupported}
+        guard #available(iOS 13.0, *) else {throw Abem.AbemError.operationNotSupported}
+        // Decrypt using the derived key.
+        let ciphertext = try from.read(upToCount: Int(size))!
+        let sodium = Sodium()
+        let contentBytes  = sodium.secretBox.open(nonceAndAuthenticatedCipherText: [UInt8](ciphertext), secretKey: [UInt8](key))
+        guard let content = contentBytes else {  throw Abem.SealedFilesBoxError.LogicalError("invalid sealed file") }
+        
+        self = try SealedFilesBoxData(serializedData:Data(content))
+        
+    }
+}
