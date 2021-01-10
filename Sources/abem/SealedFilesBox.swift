@@ -9,23 +9,30 @@ import Foundation
 import Sodium
 extension Abem {
     
+    typealias  filesIndex =  [[UInt8]:Int]
+    
     class SealedFilesBox {
         
         public let file: URL
         let header: SealedFilesBoxHeader
-        let box: SealedFilesBoxData
-        let filesTable: SealedFilesBoxFilesData
-        var fileHandle: FileHandle
-        var sk: Bytes
-        var fk: Bytes
-        var dk: Bytes
+        let box: SealedFilesBox_BoxData
+        let filesTable: ExtendedFilesData
+        var sk: Bytes?
+        var fk: Bytes?
+        var dk: Bytes?
         
         
         deinit {
             let sodium = Sodium()
-            sodium.utils.zero(&self.fk)
-            sodium.utils.zero(&self.dk)
-            sodium.utils.zero(&self.sk)
+            if self.fk != nil {
+               sodium.utils.zero(&self.fk!)
+            }
+            if self.dk != nil {
+              sodium.utils.zero(&self.dk!)
+            }
+            if self.sk != nil {
+             sodium.utils.zero(&self.sk!)
+            }
         }
         
         
@@ -40,37 +47,38 @@ extension Abem {
             self.file = file
             
             // Open the handler for reading.
-            self.fileHandle = try FileHandle(forReadingFrom: file)
+            let fileHandle = try FileHandle(forReadingFrom: file)
             
-            // Read the header.
-            let header = try SealedFilesBoxHeader(from: self.fileHandle)!
-            var mk = masterKey(from: password, salt: header.salt)
-            
-            // Derive the SealedBoxData key.
             let sodium = Sodium()
-            var sk = sodium.keyDerivation.derive(secretKey: mk, index: 1, length: sodium.secretBox.KeyBytes , context: "SealedBoxData")!
-            var dk = sodium.keyDerivation.derive(secretKey: mk, index: 2, length: sodium.secretBox.KeyBytes , context: "Directories")!
-            var fk = sodium.keyDerivation.derive(secretKey: mk, index: 3, length: sodium.secretBox.KeyBytes , context: "Directories")!
+            // Read the header.
+            self.header = try SealedFilesBoxHeader(from: fileHandle)!
+            
+            // Derive the keys.
+            var mk = masterKey(from: password, salt: header.salt)
+            self.sk = sodium.keyDerivation.derive(secretKey: mk, index: 1, length: sodium.secretBox.KeyBytes , context: "SealedBoxData")!
+            self.dk = sodium.keyDerivation.derive(secretKey: mk, index: 2, length: sodium.secretBox.KeyBytes , context: "FilesData")!
+            self.fk = sodium.keyDerivation.derive(secretKey: mk, index: 3, length: sodium.secretBox.KeyBytes , context: "Files")!
             sodium.utils.zero(&mk)
             
-            self.box = try SealedFilesBoxData(from: self.fileHandle, key: mk, size: header.sealedBoxDataSize)!
+            
+            // Read the box data.
+            self.box = try SealedFilesBox_BoxData(from: fileHandle, key: mk, size: self.header.sealedBoxDataSize)!
 
-            self.filesTable = try SealedFilesBoxFilesData(from: self.fileHandle, key: dk, size: self.box.directoriesSize)!
+            // Read the files box data.
+            let filesTableData = try SealedFilesBox_FilesData(from: fileHandle, key: self.dk!, size: self.box.filesDataSize)!
+            self.filesTable = ExtendedFilesData(filesTableData)
+            
             
         }
         
         
+        
+        
     }
-    
-    
-    public enum SealedFilesBoxError: Error {
-        case LogicalError(_ Description: String)
-    }
-    
     
     struct SealedFilesBoxHeader {
         let salt: Data
-        let sealedBoxDataSize: Int64
+        let sealedBoxDataSize: UInt64
         init?(from file: FileHandle) throws {
             guard #available(OSX 10.15.4, *) else {throw AbemError.operationNotSupported}
             guard #available(iOS 13.0, *) else {throw AbemError.operationNotSupported}
@@ -86,17 +94,31 @@ extension Abem {
             }
             
             self.sealedBoxDataSize = lenData.withUnsafeBytes{
-                $0.load(as: Int64.self)
+                $0.load(as: UInt64.self)
             }
         }
         
     }
     
-}
-
-extension SealedFilesBoxData {
+    public enum SealedFilesBoxError: Error {
+        case LogicalError(_ Description: String)
+    }
     
-    init?(from: FileHandle, key: Bytes, size: Int64) throws {
+    struct ExtendedFilesData {
+        
+        let basicData: SealedFilesBox_FilesData
+        let index: filesIndex
+        init(_ data: SealedFilesBox_FilesData) {
+            self.basicData = data
+            self.index = data.buildIndex()
+        }
+    }
+    
+}
+
+extension SealedFilesBox_BoxData {
+    
+    init?(from: FileHandle, key: Bytes, size: UInt64) throws {
         guard #available(OSX 10.15.4, *) else {throw Abem.AbemError.operationNotSupported}
         guard #available(iOS 13.0, *) else {throw Abem.AbemError.operationNotSupported}
         // Decrypt using the derived key.
@@ -105,14 +127,14 @@ extension SealedFilesBoxData {
         let contentBytes  = sodium.secretBox.open(nonceAndAuthenticatedCipherText: [UInt8](ciphertext), secretKey: key)
         guard let content = contentBytes else {  throw Abem.SealedFilesBoxError.LogicalError("invalid sealed file") }
         
-        self = try SealedFilesBoxData(serializedData:Data(content))
+        self = try SealedFilesBox_BoxData(serializedData:Data(content))
         
     }
 }
 
-extension SealedFilesBoxFilesData {
+extension SealedFilesBox_FilesData {
 
-    init?(from: FileHandle, key: Bytes, size: Int64) throws {
+    init?(from: FileHandle, key: Bytes, size: UInt64) throws {
         guard #available(OSX 10.15.4, *) else {throw Abem.AbemError.operationNotSupported}
         guard #available(iOS 13.0, *) else {throw Abem.AbemError.operationNotSupported}
         // Decrypt using the derived key.
@@ -120,9 +142,19 @@ extension SealedFilesBoxFilesData {
         let sodium = Sodium()
         let contentBytes  = sodium.secretBox.open(nonceAndAuthenticatedCipherText: [UInt8](ciphertext), secretKey: key)
         guard let content = contentBytes else {  throw Abem.SealedFilesBoxError.LogicalError("invalid sealed file") }
-        self = try SealedFilesBoxFilesData(serializedData:Data(content))
+        self = try SealedFilesBox_FilesData(serializedData:Data(content))
         
     }
+    
+    func buildIndex() ->  Abem.filesIndex {
+        var index = Abem.filesIndex()
+        for (i , file) in self.fileList.enumerated() {
+            let h = [UInt8](file.hash)
+            index[h] = i
+        }
+        return index
+    }
+    
 }
 
 

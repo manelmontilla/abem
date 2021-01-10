@@ -20,7 +20,7 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-struct SealedFilesBoxData {
+struct SealedFilesBox_BoxData {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -29,22 +29,24 @@ struct SealedFilesBoxData {
 
   var filesDataSize: UInt64 = 0
 
-  var filesOffset: UInt64 = 0
+  var filesContentAreaOffset: UInt64 = 0
+
+  var filesContentAreaSize: UInt64 = 0
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
 }
 
-struct SealedFilesBoxFilesData {
+struct SealedFilesBox_FilesData {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var fileList: [SealedFilesBoxFileListItem] = []
+  var fileList: [SealedFilesBox_FileListItem] = []
 
-  var rootDir: SealedFilesBoxDirectoryData {
-    get {return _rootDir ?? SealedFilesBoxDirectoryData()}
+  var rootDir: SealedFilesBox_DirectoryData {
+    get {return _rootDir ?? SealedFilesBox_DirectoryData()}
     set {_rootDir = newValue}
   }
   /// Returns true if `rootDir` has been explicitly set.
@@ -56,10 +58,10 @@ struct SealedFilesBoxFilesData {
 
   init() {}
 
-  fileprivate var _rootDir: SealedFilesBoxDirectoryData? = nil
+  fileprivate var _rootDir: SealedFilesBox_DirectoryData? = nil
 }
 
-struct SealedFilesBoxFileListItem {
+struct SealedFilesBox_FileListItem {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -81,7 +83,7 @@ struct SealedFilesBoxFileListItem {
   init() {}
 }
 
-struct SealedFilesBoxDirectoryData {
+struct SealedFilesBox_DirectoryData {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
@@ -90,7 +92,7 @@ struct SealedFilesBoxDirectoryData {
 
   var fileHashes: [Data] = []
 
-  var subdirectories: [SealedFilesBoxDirectoryData] = []
+  var subdirectories: [SealedFilesBox_DirectoryData] = []
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -99,12 +101,15 @@ struct SealedFilesBoxDirectoryData {
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
-extension SealedFilesBoxData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = "SealedFilesBoxData"
+fileprivate let _protobuf_package = "sealed_files_box"
+
+extension SealedFilesBox_BoxData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".BoxData"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "name"),
     2: .standard(proto: "files_data_size"),
-    3: .standard(proto: "files_offset"),
+    3: .standard(proto: "files_content_area_offset"),
+    4: .standard(proto: "files_content_area_size"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -115,7 +120,8 @@ extension SealedFilesBoxData: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
       case 2: try { try decoder.decodeSingularUInt64Field(value: &self.filesDataSize) }()
-      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.filesOffset) }()
+      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.filesContentAreaOffset) }()
+      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.filesContentAreaSize) }()
       default: break
       }
     }
@@ -128,23 +134,27 @@ extension SealedFilesBoxData: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
     if self.filesDataSize != 0 {
       try visitor.visitSingularUInt64Field(value: self.filesDataSize, fieldNumber: 2)
     }
-    if self.filesOffset != 0 {
-      try visitor.visitSingularUInt64Field(value: self.filesOffset, fieldNumber: 3)
+    if self.filesContentAreaOffset != 0 {
+      try visitor.visitSingularUInt64Field(value: self.filesContentAreaOffset, fieldNumber: 3)
+    }
+    if self.filesContentAreaSize != 0 {
+      try visitor.visitSingularUInt64Field(value: self.filesContentAreaSize, fieldNumber: 4)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: SealedFilesBoxData, rhs: SealedFilesBoxData) -> Bool {
+  static func ==(lhs: SealedFilesBox_BoxData, rhs: SealedFilesBox_BoxData) -> Bool {
     if lhs.name != rhs.name {return false}
     if lhs.filesDataSize != rhs.filesDataSize {return false}
-    if lhs.filesOffset != rhs.filesOffset {return false}
+    if lhs.filesContentAreaOffset != rhs.filesContentAreaOffset {return false}
+    if lhs.filesContentAreaSize != rhs.filesContentAreaSize {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
 }
 
-extension SealedFilesBoxFilesData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = "SealedFilesBoxFilesData"
+extension SealedFilesBox_FilesData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".FilesData"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .standard(proto: "file_list"),
     2: .standard(proto: "root_dir"),
@@ -173,7 +183,7 @@ extension SealedFilesBoxFilesData: SwiftProtobuf.Message, SwiftProtobuf._Message
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: SealedFilesBoxFilesData, rhs: SealedFilesBoxFilesData) -> Bool {
+  static func ==(lhs: SealedFilesBox_FilesData, rhs: SealedFilesBox_FilesData) -> Bool {
     if lhs.fileList != rhs.fileList {return false}
     if lhs._rootDir != rhs._rootDir {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -181,8 +191,8 @@ extension SealedFilesBoxFilesData: SwiftProtobuf.Message, SwiftProtobuf._Message
   }
 }
 
-extension SealedFilesBoxFileListItem: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = "SealedFilesBoxFileListItem"
+extension SealedFilesBox_FileListItem: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".FileListItem"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "name"),
     2: .same(proto: "type"),
@@ -231,7 +241,7 @@ extension SealedFilesBoxFileListItem: SwiftProtobuf.Message, SwiftProtobuf._Mess
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: SealedFilesBoxFileListItem, rhs: SealedFilesBoxFileListItem) -> Bool {
+  static func ==(lhs: SealedFilesBox_FileListItem, rhs: SealedFilesBox_FileListItem) -> Bool {
     if lhs.name != rhs.name {return false}
     if lhs.type != rhs.type {return false}
     if lhs.offset != rhs.offset {return false}
@@ -243,8 +253,8 @@ extension SealedFilesBoxFileListItem: SwiftProtobuf.Message, SwiftProtobuf._Mess
   }
 }
 
-extension SealedFilesBoxDirectoryData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = "SealedFilesBoxDirectoryData"
+extension SealedFilesBox_DirectoryData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".DirectoryData"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "name"),
     2: .standard(proto: "file_hashes"),
@@ -278,7 +288,7 @@ extension SealedFilesBoxDirectoryData: SwiftProtobuf.Message, SwiftProtobuf._Mes
     try unknownFields.traverse(visitor: &visitor)
   }
 
-  static func ==(lhs: SealedFilesBoxDirectoryData, rhs: SealedFilesBoxDirectoryData) -> Bool {
+  static func ==(lhs: SealedFilesBox_DirectoryData, rhs: SealedFilesBox_DirectoryData) -> Bool {
     if lhs.name != rhs.name {return false}
     if lhs.fileHashes != rhs.fileHashes {return false}
     if lhs.subdirectories != rhs.subdirectories {return false}
