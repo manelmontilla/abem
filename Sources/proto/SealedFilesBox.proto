@@ -11,16 +11,19 @@ message FilesData {
 }
 
 message FileListItem {
-  string name = 1;
-  string type = 2;
-  uint64 offset = 3;
-  uint64 size = 4;
-  bool deleted = 5;
-  bytes hash = 6;
+  uint64 offset = 1;
+  uint64 size = 2;
+  bool deleted = 3;
+  bytes hash = 4;
+}
+
+message DirectoryFile {
+    string name = 1;
+    bytes file_hash = 2;
 }
 
 message DirectoryData {
     string name = 1;
-    repeated bytes file_hashes = 2;
+    repeated DirectoryFile files = 2;
     repeated DirectoryData subdirectories = 3;
 }

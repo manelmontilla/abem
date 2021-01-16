@@ -20,28 +20,16 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
   typealias Version = _2
 }
 
-struct SealedFilesBox_BoxData {
+struct SealedFilesBox_FilesData {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
   var name: String = String()
 
-  var filesDataSize: UInt64 = 0
-
   var filesContentAreaOffset: UInt64 = 0
 
   var filesContentAreaSize: UInt64 = 0
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  init() {}
-}
-
-struct SealedFilesBox_FilesData {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
 
   var fileList: [SealedFilesBox_FileListItem] = []
 
@@ -66,10 +54,6 @@ struct SealedFilesBox_FileListItem {
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
   // methods supported on all messages.
 
-  var name: String = String()
-
-  var type: String = String()
-
   var offset: UInt64 = 0
 
   var size: UInt64 = 0
@@ -83,6 +67,20 @@ struct SealedFilesBox_FileListItem {
   init() {}
 }
 
+struct SealedFilesBox_DirectoryFile {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var name: String = String()
+
+  var fileHash: Data = Data()
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+}
+
 struct SealedFilesBox_DirectoryData {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -90,7 +88,7 @@ struct SealedFilesBox_DirectoryData {
 
   var name: String = String()
 
-  var fileHashes: [Data] = []
+  var files: [SealedFilesBox_DirectoryFile] = []
 
   var subdirectories: [SealedFilesBox_DirectoryData] = []
 
@@ -103,13 +101,14 @@ struct SealedFilesBox_DirectoryData {
 
 fileprivate let _protobuf_package = "sealed_files_box"
 
-extension SealedFilesBox_BoxData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".BoxData"
+extension SealedFilesBox_FilesData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".FilesData"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "name"),
-    2: .standard(proto: "files_data_size"),
     3: .standard(proto: "files_content_area_offset"),
     4: .standard(proto: "files_content_area_size"),
+    5: .standard(proto: "file_list"),
+    6: .standard(proto: "root_dir"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -119,9 +118,10 @@ extension SealedFilesBox_BoxData: SwiftProtobuf.Message, SwiftProtobuf._MessageI
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
-      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.filesDataSize) }()
       case 3: try { try decoder.decodeSingularUInt64Field(value: &self.filesContentAreaOffset) }()
       case 4: try { try decoder.decodeSingularUInt64Field(value: &self.filesContentAreaSize) }()
+      case 5: try { try decoder.decodeRepeatedMessageField(value: &self.fileList) }()
+      case 6: try { try decoder.decodeSingularMessageField(value: &self._rootDir) }()
       default: break
       }
     }
@@ -131,59 +131,25 @@ extension SealedFilesBox_BoxData: SwiftProtobuf.Message, SwiftProtobuf._MessageI
     if !self.name.isEmpty {
       try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
     }
-    if self.filesDataSize != 0 {
-      try visitor.visitSingularUInt64Field(value: self.filesDataSize, fieldNumber: 2)
-    }
     if self.filesContentAreaOffset != 0 {
       try visitor.visitSingularUInt64Field(value: self.filesContentAreaOffset, fieldNumber: 3)
     }
     if self.filesContentAreaSize != 0 {
       try visitor.visitSingularUInt64Field(value: self.filesContentAreaSize, fieldNumber: 4)
     }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: SealedFilesBox_BoxData, rhs: SealedFilesBox_BoxData) -> Bool {
-    if lhs.name != rhs.name {return false}
-    if lhs.filesDataSize != rhs.filesDataSize {return false}
-    if lhs.filesContentAreaOffset != rhs.filesContentAreaOffset {return false}
-    if lhs.filesContentAreaSize != rhs.filesContentAreaSize {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension SealedFilesBox_FilesData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".FilesData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .standard(proto: "file_list"),
-    2: .standard(proto: "root_dir"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      // The use of inline closures is to circumvent an issue where the compiler
-      // allocates stack space for every case branch when no optimizations are
-      // enabled. https://github.com/apple/swift-protobuf/issues/1034
-      switch fieldNumber {
-      case 1: try { try decoder.decodeRepeatedMessageField(value: &self.fileList) }()
-      case 2: try { try decoder.decodeSingularMessageField(value: &self._rootDir) }()
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
     if !self.fileList.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.fileList, fieldNumber: 1)
+      try visitor.visitRepeatedMessageField(value: self.fileList, fieldNumber: 5)
     }
     if let v = self._rootDir {
-      try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+      try visitor.visitSingularMessageField(value: v, fieldNumber: 6)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: SealedFilesBox_FilesData, rhs: SealedFilesBox_FilesData) -> Bool {
+    if lhs.name != rhs.name {return false}
+    if lhs.filesContentAreaOffset != rhs.filesContentAreaOffset {return false}
+    if lhs.filesContentAreaSize != rhs.filesContentAreaSize {return false}
     if lhs.fileList != rhs.fileList {return false}
     if lhs._rootDir != rhs._rootDir {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
@@ -194,12 +160,10 @@ extension SealedFilesBox_FilesData: SwiftProtobuf.Message, SwiftProtobuf._Messag
 extension SealedFilesBox_FileListItem: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FileListItem"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "name"),
-    2: .same(proto: "type"),
-    3: .same(proto: "offset"),
-    4: .same(proto: "size"),
-    5: .same(proto: "deleted"),
-    6: .same(proto: "hash"),
+    1: .same(proto: "offset"),
+    2: .same(proto: "size"),
+    3: .same(proto: "deleted"),
+    4: .same(proto: "hash"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -208,42 +172,32 @@ extension SealedFilesBox_FileListItem: SwiftProtobuf.Message, SwiftProtobuf._Mes
       // allocates stack space for every case branch when no optimizations are
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
-      case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
-      case 2: try { try decoder.decodeSingularStringField(value: &self.type) }()
-      case 3: try { try decoder.decodeSingularUInt64Field(value: &self.offset) }()
-      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.size) }()
-      case 5: try { try decoder.decodeSingularBoolField(value: &self.deleted) }()
-      case 6: try { try decoder.decodeSingularBytesField(value: &self.hash) }()
+      case 1: try { try decoder.decodeSingularUInt64Field(value: &self.offset) }()
+      case 2: try { try decoder.decodeSingularUInt64Field(value: &self.size) }()
+      case 3: try { try decoder.decodeSingularBoolField(value: &self.deleted) }()
+      case 4: try { try decoder.decodeSingularBytesField(value: &self.hash) }()
       default: break
       }
     }
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.name.isEmpty {
-      try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
-    }
-    if !self.type.isEmpty {
-      try visitor.visitSingularStringField(value: self.type, fieldNumber: 2)
-    }
     if self.offset != 0 {
-      try visitor.visitSingularUInt64Field(value: self.offset, fieldNumber: 3)
+      try visitor.visitSingularUInt64Field(value: self.offset, fieldNumber: 1)
     }
     if self.size != 0 {
-      try visitor.visitSingularUInt64Field(value: self.size, fieldNumber: 4)
+      try visitor.visitSingularUInt64Field(value: self.size, fieldNumber: 2)
     }
     if self.deleted != false {
-      try visitor.visitSingularBoolField(value: self.deleted, fieldNumber: 5)
+      try visitor.visitSingularBoolField(value: self.deleted, fieldNumber: 3)
     }
     if !self.hash.isEmpty {
-      try visitor.visitSingularBytesField(value: self.hash, fieldNumber: 6)
+      try visitor.visitSingularBytesField(value: self.hash, fieldNumber: 4)
     }
     try unknownFields.traverse(visitor: &visitor)
   }
 
   static func ==(lhs: SealedFilesBox_FileListItem, rhs: SealedFilesBox_FileListItem) -> Bool {
-    if lhs.name != rhs.name {return false}
-    if lhs.type != rhs.type {return false}
     if lhs.offset != rhs.offset {return false}
     if lhs.size != rhs.size {return false}
     if lhs.deleted != rhs.deleted {return false}
@@ -253,11 +207,49 @@ extension SealedFilesBox_FileListItem: SwiftProtobuf.Message, SwiftProtobuf._Mes
   }
 }
 
+extension SealedFilesBox_DirectoryFile: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".DirectoryFile"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "name"),
+    2: .standard(proto: "file_hash"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
+      case 2: try { try decoder.decodeSingularBytesField(value: &self.fileHash) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.name.isEmpty {
+      try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
+    }
+    if !self.fileHash.isEmpty {
+      try visitor.visitSingularBytesField(value: self.fileHash, fieldNumber: 2)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: SealedFilesBox_DirectoryFile, rhs: SealedFilesBox_DirectoryFile) -> Bool {
+    if lhs.name != rhs.name {return false}
+    if lhs.fileHash != rhs.fileHash {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension SealedFilesBox_DirectoryData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".DirectoryData"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
     1: .same(proto: "name"),
-    2: .standard(proto: "file_hashes"),
+    2: .same(proto: "files"),
     3: .same(proto: "subdirectories"),
   ]
 
@@ -268,7 +260,7 @@ extension SealedFilesBox_DirectoryData: SwiftProtobuf.Message, SwiftProtobuf._Me
       // enabled. https://github.com/apple/swift-protobuf/issues/1034
       switch fieldNumber {
       case 1: try { try decoder.decodeSingularStringField(value: &self.name) }()
-      case 2: try { try decoder.decodeRepeatedBytesField(value: &self.fileHashes) }()
+      case 2: try { try decoder.decodeRepeatedMessageField(value: &self.files) }()
       case 3: try { try decoder.decodeRepeatedMessageField(value: &self.subdirectories) }()
       default: break
       }
@@ -279,8 +271,8 @@ extension SealedFilesBox_DirectoryData: SwiftProtobuf.Message, SwiftProtobuf._Me
     if !self.name.isEmpty {
       try visitor.visitSingularStringField(value: self.name, fieldNumber: 1)
     }
-    if !self.fileHashes.isEmpty {
-      try visitor.visitRepeatedBytesField(value: self.fileHashes, fieldNumber: 2)
+    if !self.files.isEmpty {
+      try visitor.visitRepeatedMessageField(value: self.files, fieldNumber: 2)
     }
     if !self.subdirectories.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.subdirectories, fieldNumber: 3)
@@ -290,7 +282,7 @@ extension SealedFilesBox_DirectoryData: SwiftProtobuf.Message, SwiftProtobuf._Me
 
   static func ==(lhs: SealedFilesBox_DirectoryData, rhs: SealedFilesBox_DirectoryData) -> Bool {
     if lhs.name != rhs.name {return false}
-    if lhs.fileHashes != rhs.fileHashes {return false}
+    if lhs.files != rhs.files {return false}
     if lhs.subdirectories != rhs.subdirectories {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
