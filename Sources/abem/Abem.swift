@@ -82,7 +82,6 @@ public struct Abem {
      - Returns: The generated ciphertext.
      */
     public static func Encrypt(data: Data, metadata: String, with pwd: String, passwordStrength pStrength: PasswordStrength = .strong) throws -> Ciphertext? {
-        
         guard #available(OSX 10.15, *) else {throw AbemError.operationNotSupported}
         guard #available(iOS 13.0, *) else {throw AbemError.operationNotSupported}
         guard pwd.count > 0 else {throw AbemError.emptyPassword}
