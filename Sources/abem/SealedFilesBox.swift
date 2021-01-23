@@ -13,7 +13,6 @@ extension Abem {
     
     public class SealedFilesBox {
         
-        
         public let file: URL
         
         var header: SealedFilesBoxHeader?
@@ -61,18 +60,26 @@ extension Abem {
             
             
             // Read the header.
-            // let headerContents := fileHan
-            self.header = try SealedFilesBoxHeader(from: fileHandle)!
+            let headerContents = try fileHandle.read(upToCount: SealedFilesBoxHeader.size)
+            guard let contents = headerContents  else {
+                throw SealedFilesBoxError.FileIsInvalid
+            }
+            self.header = try SealedFilesBoxHeader(contents: contents)
+            
             
             let sodium = Sodium()
+            
             // Derive the keys.
             var mk = masterKey(from: password, salt: header!.salt)
             self.dk = sodium.keyDerivation.derive(secretKey: mk, index: 1, length: sodium.secretBox.KeyBytes , context: "Data")!
             self.fk = sodium.keyDerivation.derive(secretKey: mk, index: 2, length: sodium.secretBox.KeyBytes , context: "Files")!
             sodium.utils.zero(&mk)
             
-            // Read the files box data.
-            self.filesTable = try ExtendedFilesData(from: fileHandle, key: self.dk!, size: self.header!.sealedBoxDataSize)
+            // Read the files table.
+            let ciphertext = try fileHandle.read(upToCount: Int(header!.sealedBoxDataSize))!
+            let contentBytes  = sodium.secretBox.open(nonceAndAuthenticatedCipherText: [UInt8](ciphertext), secretKey: self.dk!)
+            guard let content = contentBytes else {  throw Abem.SealedFilesBoxError.LogicalError("invalid sealed file") }
+            self.filesTable = try ExtendedFilesData(from: Data(content))
             
         }
         
@@ -88,7 +95,7 @@ extension Abem {
          - Parameter containing: the contents of the file.
          
          */
-          public func addFile(in dir: SealedFilesBoxDirectory, named name: String, containing data: Data)  throws -> SealedFilesBoxDirectory  {
+        public func addFile(in dir: SealedFilesBoxDirectory, named name: String, containing data: Data)  throws -> SealedFilesBoxDirectory  {
             guard #available(OSX 10.15.4, *) else {throw AbemError.operationNotSupported}
             guard #available(iOS 13.0, *) else {throw AbemError.operationNotSupported}
             
@@ -100,60 +107,55 @@ extension Abem {
                 throw SealedFilesBoxError.LogicalError("unable to generate hash")
             }
             
-            // Encrypt the data.
-            let contentBytes: Bytes? = sodium.secretBox.seal(message: Bytes(data), secretKey: self.fk!)
-            guard let content = contentBytes else {
+            // Encrypt the data of the new file.
+            let fileContentCiphertext: Bytes? = sodium.secretBox.seal(message: Bytes(data), secretKey: self.fk!)
+            guard let fileCiphertext = fileContentCiphertext else {
                 throw SealedFilesBoxError.LogicalError("unable to encrypt data")
             }
             
             // Write the data to the file data area of the box.
-            var fileHandle = try FileHandle(forUpdating: file)
+            let fileHandle = try FileHandle(forUpdating: file)
+            defer {
+                try! fileHandle.close()
+            }
             let last = try fileHandle.seekToEnd()
-            fileHandle.write(Data(content))
-            try fileHandle.close()
+            fileHandle.write(Data(fileCiphertext))
             
-            // Add the file to the files list of the box.
+            // Add the file to fileTable in the proper directory.
             let fileItem = SealedFilesBox_FileListItem.with{
                 item in
                 item.hash = Data(h)
                 item.offset = last
                 item.deleted = false
-                item.size = UInt64(content.count)
+                item.size = UInt64(fileCiphertext.count)
             }
             
-            self.filesTable?.basicData.fileList.append(fileItem)
-            let i = self.filesTable!.basicData.fileList.count
+            let addedInDir = try self.filesTable!.addFile(file: fileItem, in: dir, maned: name)
             
-            // Add the file to the index of the box
-            self.filesTable?.index[h] = i
-            
-            var components = dir.fullName.pathComponents
-            if components[0] == "/" {
-                components.remove(at: 0)
+            // Write the fileTable to disk.
+            let fileTableContents = try self.filesTable!.combined()
+            guard fileTableContents.count < ExtendedFilesData.maxSize else {
+                throw SealedFilesBoxError.MaxNumberOfFilesLimitReached
             }
-            let fDirData = SealedFilesBox_DirectoryFile.with{
-                f in
-                f.name = name
-                f.fileHash = Data(h)
+            let ciphertext: Bytes? = sodium.secretBox.seal(message: Bytes(fileTableContents), secretKey: self.dk!)
+            guard let cipher = ciphertext else {
+                throw Abem.SealedFilesBoxError.LogicalError("unable to encrypt data")
             }
+            try fileHandle.seek(toOffset: UInt64(SealedFilesBoxHeader.size))
+            fileHandle.write(Data(cipher))
             
-            // Add the file to the directory tree.
-            let newDir = try self.filesTable!.basicData.rootDir.addFile(at: components, fDirData)
-            // Write the data to the file data area of the box.
-            fileHandle = try FileHandle(forUpdating: file)
-            try! fileHandle.seek(toOffset: UInt64(SealedFilesBoxHeader.size))
-            let fileTableSize = try! self.filesTable!.save(to: fileHandle,using: self.dk!)
-            defer {
-                try! fileHandle.close()
-            }
             
+            // Update the header.
+            let fileTableSize = cipher.count
             self.header = SealedFilesBoxHeader(self.header!.salt, UInt64(fileTableSize))
             let headerContents = self.header!.combined()
+            // Write the header to the disk.
             try fileHandle.seek(toOffset: 0)
             fileHandle.write(headerContents)
-            return SealedFilesBoxDirectory(directoryData: newDir, fullName: dir.fullName)
+            
+            // Return the directory info were the file was added.
+            return addedInDir
         }
-        
         
         static public func create(named name: String, with password: String) throws -> Data {
             let sodium = Sodium()
@@ -206,6 +208,7 @@ extension Abem {
             return sodium.pwHash.SaltBytes + 8
         }
         
+        
         let salt: Data
         let sealedBoxDataSize: UInt64
         
@@ -214,20 +217,18 @@ extension Abem {
             self.sealedBoxDataSize = sealedBoxDataSize
         }
         
-        init?(from file: FileHandle) throws {
-            guard #available(OSX 10.15.4, *) else {throw AbemError.operationNotSupported}
-            guard #available(iOS 13.0, *) else {throw AbemError.operationNotSupported}
-            let sodium = Sodium()
-            // Read the salt.
-            self.salt = try file.read(upToCount:sodium.pwHash.SaltBytes)!
-            // Read the size of the sealed box data.
-            let lenData = try file.read(upToCount: 8)!
-            if lenData.count != 8 {
-                throw Abem.SealedFilesBoxError.LogicalError("invalid sealed file")
+        init(contents:Data) throws {
+            guard contents.count == SealedFilesBoxHeader.size else {
+                throw SealedFilesBoxError.FileIsInvalid
             }
-            self.sealedBoxDataSize = lenData.withUnsafeBytes{
+            let sodium = Sodium()
+            let salt = contents[0..<sodium.pwHash.SaltBytes]
+            let sizeData = contents[sodium.pwHash.SaltBytes..<contents.count]
+            let size = sizeData.withUnsafeBytes{
                 $0.load(as: UInt64.self)
             }
+            self.salt = salt
+            self.sealedBoxDataSize = size
         }
         
         func combined() -> Data {
@@ -246,9 +247,43 @@ extension Abem {
         static let maxSize = 2 * (2 << 19) // 2 MB's.
         var basicData: SealedFilesBox_FilesData
         var index: filesIndex
+        
         init(_ data: SealedFilesBox_FilesData) {
             self.basicData = data
             self.index = data.buildIndex()
+        }
+        
+        init?(from content: Data) throws {
+            self.basicData = try SealedFilesBox_FilesData(serializedData:content)
+            self.index = self.basicData.buildIndex()
+        }
+        
+        func combined() throws -> Data {
+            let ret = try self.basicData.serializedData()
+            return ret
+        }
+        
+        mutating func addFile(file fileItem: SealedFilesBox_FileListItem, in dir: SealedFilesBoxDirectory, maned name: String) throws -> SealedFilesBoxDirectory {
+            self.basicData.fileList.append(fileItem)
+            let i = self.basicData.fileList.count
+            // Add the file to the index of the box
+            let fileHashBytes = Bytes(fileItem.hash)
+            self.index[fileHashBytes] = i
+            
+            var components = dir.fullName.pathComponents
+            if components[0] == "/" {
+                components.remove(at: 0)
+            }
+            let fDirData = SealedFilesBox_DirectoryFile.with{
+                f in
+                f.name = name
+                f.fileHash = fileItem.hash
+            }
+            
+            // Add the file to the directory tree.
+            let newDir = try self.basicData.rootDir.addFile(at: components, fDirData)
+            let newDirInfo = SealedFilesBoxDirectory(directoryData: newDir, fullName: dir.fullName)
+            return newDirInfo
         }
         
         func save(to file: FileHandle, using key: Bytes) throws -> Int {
@@ -264,20 +299,8 @@ extension Abem {
             guard content.count < ExtendedFilesData.maxSize else {
                 throw SealedFilesBoxError.MaxNumberOfFilesLimitReached
             }
-           file.write(Data(content))
-           return content.count
-        }
-        
-        init?(from: FileHandle, key: Bytes, size: UInt64) throws {
-            guard #available(OSX 10.15.4, *) else {throw Abem.AbemError.operationNotSupported}
-            guard #available(iOS 13.0, *) else {throw Abem.AbemError.operationNotSupported}
-            // Decrypt using the derived key.
-            let ciphertext = try from.read(upToCount: Int(size))!
-            let sodium = Sodium()
-            let contentBytes  = sodium.secretBox.open(nonceAndAuthenticatedCipherText: [UInt8](ciphertext), secretKey: key)
-            guard let content = contentBytes else {  throw Abem.SealedFilesBoxError.LogicalError("invalid sealed file") }
-            self.basicData = try SealedFilesBox_FilesData(serializedData:Data(content))
-            self.index = self.basicData.buildIndex()
+            file.write(Data(content))
+            return content.count
         }
         
     }
@@ -289,6 +312,7 @@ extension Abem {
         case BoxClosed
         case DirectoryDoesNotExist
         case MaxNumberOfFilesLimitReached
+        case FileIsInvalid
     }
     
     public struct SealedFilesBoxFile {
@@ -329,7 +353,7 @@ extension Abem {
 
 extension SealedFilesBox_FilesData {
     
-   func buildIndex() ->  Abem.filesIndex {
+    func buildIndex() ->  Abem.filesIndex {
         var index = Abem.filesIndex()
         for (i , file) in self.fileList.enumerated() {
             let h = [UInt8](file.hash)
